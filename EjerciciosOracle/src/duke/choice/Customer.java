@@ -1,76 +1,56 @@
-package duke.choice ;
+package duke.choice;
 
-public class Customer
-{
-    private String name ;
-    private String size ;
-    private Clothing[] items ;
+public class Customer {
+    private String name;
+    private String size;
+    private Clothing[] items;
 
-    public Customer (String name, int measurement) 
-    {
-        this.name = name ;
-        this.size = setSize(measurement) ;
+    public Customer(String name, int measurement) {
+        this.name = name;
+        this.size = setSize(measurement);
     }
 
-    public void addItems(Clothing[] newItem)
-    {
-        items = newItem ;
+    public void addItems(Clothing[] newItem){
+        items = newItem;
     }
-
-    // Getters
-    public Clothing[] getItems()
-    {
-        return items ;
+    public Clothing[] getItems() {
+        return items;
     }
-    
-    public void getTotalClothingCost(Clothing[] stock, double tax)
-    {
-        double toti = 0 ;
-        System.out.println("--------------------------");
-        for (Clothing clothe: stock)
-        {
-            System.out.println("Item : " + clothe.getDescription() + " , talle: " + clothe.getSize() + " , precio: $" + clothe.getPrice()) ;;
-            toti += clothe.getPrice() ;
+    public void getTotalClothingCost(Clothing[] stock, double TAX){
+        double total = 0;
+        for (Clothing clothe: stock){
+            System.out.println("Item: " + clothe.getDescription() + " , " + clothe.getSize() + " , " + clothe.getPrice());
+            total += clothe.getPrice();
         }
-        System.out.println("Precio final: $" + (toti + (toti*tax))) ;
+        System.out.println("Precio final: " + (total + (total*TAX)));
     }
-
-    public String getName() 
-    {
-        return name ;
+    public String getName() {
+        return name;
     }
-
-    public String getSize()
-    {
-        return size ;
+    public void setName(String name) {
+        this.name = name;
     }
-
-    // Setters
-    public void setName(String name) 
-    {
-        this.name = name ;
+    public String getSize() {
+        return size;
     }
-
-    public void setSize(String size) 
-    {
-        this.size = size ;
+    public void setSize(String size) {
+        this.size = size;
     }
-    public String setSize(int measurement)
-    {
+    public String setSize(int measurement){
         switch (measurement) {
             case 1: case 2: case 3:
-                size = "S" ;
-                break ;
+                size = "S";
+                break;
             case 4: case 5: case 6:
-                size = "M" ;
-                break ;
+                size = "M";
+                break;
             case 7: case 8: case 9:
-                size = "L" ;
-                break ;
+                size = "L";
+                break;
             default:
-                size = "X"  ;
-                break  ;
+                size = "X";
+                break;
         }
-        return size  ;
+        return size;
     }
 }
