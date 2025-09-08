@@ -2,9 +2,9 @@ import java.io.*;
 import java.net.*;
 import java.util.*;
 
-public class Servidor
-{
-    private ServerSocket serverSocket;
+public class Servidor {
+    private ServerSocket serverSocketClientes;
+    private ServerSocket serverSocketModerador;
     private Socket moderadorSocket;
     private ArrayList<Socket> clientes = new ArrayList<>();
     private final Object lockModerador = new Object();
@@ -12,14 +12,16 @@ public class Servidor
     private PrintWriter salidaModerador;
     private BufferedReader entradaModerador;
 
-    public Servidor(int puerto) throws IOException {
-        serverSocket = new ServerSocket(puerto);
-        System.out.println("Servidor iniciado en puerto " + puerto);
+    public Servidor(int puertoModerador, int puertoClientes) throws IOException {
+        serverSocketModerador = new ServerSocket(puertoModerador);
+        serverSocketClientes = new ServerSocket(puertoClientes);
+        System.out.println("Servidor iniciado en puerto moderador: " + puertoModerador);
+        System.out.println("Servidor iniciado en puerto clientes: " + puertoClientes);
     }
 
     public void esperarModerador() throws IOException {
         System.out.println("Esperando conexión del moderador...");
-        moderadorSocket = serverSocket.accept();
+        moderadorSocket = serverSocketModerador.accept();
         System.out.println("Moderador conectado.");
 
         salidaModerador = new PrintWriter(moderadorSocket.getOutputStream(), true);
@@ -30,7 +32,7 @@ public class Servidor
         new Thread(() -> {
             while (true) {
                 try {
-                    Socket cliente = serverSocket.accept();
+                    Socket cliente = serverSocketClientes.accept();
                     clientes.add(cliente);
 
                     BufferedReader entrada = new BufferedReader(new InputStreamReader(cliente.getInputStream()));
@@ -58,7 +60,6 @@ public class Servidor
 
                     String respuesta;
                     synchronized (lockModerador) {
-
                         // Enviar mensaje al moderador
                         salidaModerador.println(mensajeCompleto);
 
@@ -68,7 +69,7 @@ public class Servidor
 
                     if ("APROBADO".equalsIgnoreCase(respuesta)) {
                         System.out.println(mensajeCompleto);
-                        // Aquí puedes decidir si enviar el mensaje a clientes o no
+                        // Confirmar al cliente que se envió
                         salida.println("ENVIADO");
                     } else {
                         salida.println("RECHAZADO");
@@ -80,12 +81,12 @@ public class Servidor
         }).start();
     }
 
-
-    public static void main(String[] args) throws IOException
-    {
-        Servidor servidor = new Servidor(50000);
+    public static void main(String[] args) throws IOException {
+        Servidor servidor = new Servidor(50000, 50001);
+        // Primero espera moderador (bloqueante)
         servidor.esperarModerador();
+
+        // Luego atiende clientes en hilo aparte
         servidor.esperarClientes();
     }
 }
-
