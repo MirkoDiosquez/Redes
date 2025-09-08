@@ -7,8 +7,8 @@ public class Servidor
     private ServerSocket serverSocket;
     private Socket moderadorSocket;
     private ArrayList<Socket> clientes = new ArrayList<>();
+    private final Object lockModerador = new Object();
     private Map<Socket, String> nombresClientes = new HashMap<>();
-
     private PrintWriter salidaModerador;
     private BufferedReader entradaModerador;
 
@@ -56,20 +56,21 @@ public class Servidor
                 while ((mensaje = entrada.readLine()) != null) {
                     String mensajeCompleto = nombre + ": " + mensaje;
 
-                    // Enviar al moderador
-                    salidaModerador.println(mensajeCompleto);
+                    String respuesta;
+                    synchronized (lockModerador) {
 
-                    // Esperar respuesta del moderador
-                    String respuesta = entradaModerador.readLine();
+                        // Enviar mensaje al moderador
+                        salidaModerador.println(mensajeCompleto);
+
+                        // Esperar la respuesta del moderador
+                        respuesta = entradaModerador.readLine();
+                    }
 
                     if ("APROBADO".equalsIgnoreCase(respuesta)) {
-                        // Mostrar en consola del servidor (visible para todos si están usando el servidor)
                         System.out.println(mensajeCompleto);
-
-                        // Confirmar al remitente
+                        // Aquí puedes decidir si enviar el mensaje a clientes o no
                         salida.println("ENVIADO");
                     } else {
-                        // Rechazado: solo se notifica al cliente remitente
                         salida.println("RECHAZADO");
                     }
                 }
@@ -78,6 +79,7 @@ public class Servidor
             }
         }).start();
     }
+
 
     public static void main(String[] args) throws IOException
     {
