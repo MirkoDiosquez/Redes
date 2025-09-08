@@ -4,22 +4,18 @@ import java.net.*;
 public class Moderador {
     public static void main(String[] args) {
         try {
-            Socket socket = new Socket("localhost", 50000); //"192.168.1.7"
-
-            PrintWriter salidaServidor =  new PrintWriter(socket.getOutputStream(), true);
+            Socket socket = new Socket("192.168.1.7", 50000);
+            PrintWriter salidaServidor = new PrintWriter(socket.getOutputStream(), true);
             BufferedReader entradaServidor = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-
             BufferedReader consola = new BufferedReader(new InputStreamReader(System.in));
 
-            String mensaje = entradaServidor.readLine() ;
-            String decisionSiOno = "" ;
-            while (mensaje!= null)
-            {
-                System.out.println("Mensaje recibido para moderar: " + mensaje);
+            String mensaje;
+            while ((mensaje = entradaServidor.readLine()) != null) {
+                System.out.println("Mensaje recibido para moderar de: " + mensaje);
                 System.out.print("¿Aprobar mensaje? (sí/no): ");
-                decisionSiOno = consola.readLine();
+                String decision = consola.readLine();
 
-                if ("si".equalsIgnoreCase(decisionSiOno)) {
+                if ("si".equalsIgnoreCase(decision)) {
                     salidaServidor.println("APROBADO");
                 } else {
                     salidaServidor.println("RECHAZADO");
@@ -30,4 +26,3 @@ public class Moderador {
         }
     }
 }
-
