@@ -11,9 +11,9 @@ public class Cliente
             PrintWriter salida = new PrintWriter(socket.getOutputStream(), true);
             BufferedReader consola = new BufferedReader(new InputStreamReader(System.in));
 
-            System.out.print("Ingresa tu nombre: "); // pide al cliente un nombre
+            System.out.print("Ingresa tu nombre: ");
             String nombre = consola.readLine();
-            salida.println(nombre); // envia el nombre del cliente al servidor
+            salida.println(nombre); 
             final boolean[] esperandoRespuesta = {false};
 
             new Thread(() -> // hilo para recibir mensajes del servidor
