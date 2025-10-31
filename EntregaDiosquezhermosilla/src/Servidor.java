@@ -19,6 +19,7 @@ public class Servidor
     private BufferedReader entradaModerador;
     private PublicKey clavePublicaServidor;
     private PrivateKey clavePrivadaServidor;
+    private Map<Socket, SecretKey> clavesAESClientes = new HashMap<>();
 
 
 
@@ -96,10 +97,14 @@ public class Servidor
                     // Descifrar la clave AES usando la clave privada del servidor
                     Cipher rsaCipher = Cipher.getInstance("RSA");
                     rsaCipher.init(Cipher.DECRYPT_MODE, clavePrivadaServidor); // desencripta con clave privada
-                    byte[] claveAESBytes = rsaCipher.doFinal(claveAESCifrada);
+                    byte[] claveAESBytes = rsaCipher.doFinal(claveAESCifrada); // ACA OBTENEMOS LA CLAVE ALEATORIA
 
                     // Reconstruir la clave AES a partir de los bytes originales
                     SecretKey claveAESCliente = new SecretKeySpec(claveAESBytes, 0, claveAESBytes.length, "AES");
+
+                    clavesAESClientes.put(cliente, claveAESCliente); // Guardamos la clave aleatoria asociada a cada cliente
+
+
 
                     // lee el nombre del cliente
                     String nombre = entrada.readLine();
