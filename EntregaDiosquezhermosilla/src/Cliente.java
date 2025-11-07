@@ -70,6 +70,15 @@ public class Cliente
                     {
                         if (mensajeServidor.equals("ENVIADO"))
                         {
+                            /*
+                            // descifrar mensaje del servidor
+                            Cipher aes = Cipher.getInstance("AES");
+                            aes.init(Cipher.DECRYPT_MODE, claveAES);
+                            byte[] mensajeBytes = Base64.getDecoder().decode(mensaje);
+                            String mensajeDescifrado = new String(aes.doFinal(mensajeBytes));
+                            System.out.println("📩 " + mensajeDescifrado);
+
+                            */
                             System.out.println("✅ Se envió el mensaje.");
                         }
                         else if (mensajeServidor.equals("RECHAZADO"))
@@ -101,6 +110,12 @@ public class Cliente
                 String mensajeUsuario = consola.readLine();
                 if (mensajeUsuario != null && !mensajeUsuario.isEmpty())
                 {
+
+                    Cipher aes = Cipher.getInstance("AES");
+                    aes.init(Cipher.ENCRYPT_MODE, claveAES_ServidorCLiente);
+                    byte[] mensajeCifrado = aes.doFinal(mensajeUsuario.getBytes());
+                    String mensajeCifradoBase64 = Base64.getEncoder().encodeToString(mensajeCifrado);
+
                     salida.println(mensajeUsuario);
                     esperandoRespuesta[0] = true;
                 }

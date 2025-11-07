@@ -20,7 +20,7 @@ public class Servidor
     private PublicKey clavePublicaServidor;
     private PrivateKey clavePrivadaServidor;
     private Map<Socket, SecretKey> clavesAESClientes = new HashMap<>();
-
+    private SecretKey claveAESModerador;
 
 
 
@@ -62,14 +62,29 @@ public class Servidor
 
 
 
-    public void esperarModerador() throws IOException
-    {
+    public void esperarModerador() throws IOException, NoSuchPaddingException, NoSuchAlgorithmException, IllegalBlockSizeException, BadPaddingException, InvalidKeyException {
         System.out.println("Esperando conexión del moderador...");
         moderadorSocket = serverSocketModerador.accept();
         System.out.println("Moderador conectado.");
 
         salidaModerador = new PrintWriter(moderadorSocket.getOutputStream(), true);
         entradaModerador = new BufferedReader(new InputStreamReader(moderadorSocket.getInputStream()));
+
+        // Enviamos clave publica al mod
+        salidaModerador.println(getClavePublica());
+
+        // Recibimos la clave generada
+        String claveAESCifradaBase64 = entradaModerador.readLine();
+        byte[] claveAESCifrada = Base64.getDecoder().decode(claveAESCifradaBase64);
+
+        // Desencriptamos
+        Cipher rsa = Cipher.getInstance("RSA");
+        rsa.init(Cipher.DECRYPT_MODE, clavePrivadaServidor);
+        byte[] claveAESBytes = rsa.doFinal(claveAESCifrada);
+
+
+        // reconstruir clave AES
+        claveAESModerador = new SecretKeySpec(claveAESBytes, 0, claveAESBytes.length, "AES");
     }
 
     public void esperarClientes()
@@ -89,7 +104,7 @@ public class Servidor
                     // le enviamos la clave Publica al cliente
                     salida.println(getClavePublica());
 
-                    // Recibir la clave AES cifrada (en texto Base64)
+                    // Recibir la clave AES cifrada (en texto -> Base64)
                     String claveAESCifradaBase64 = entrada.readLine();
                     byte[] claveAESCifrada = Base64.getDecoder().decode(claveAESCifradaBase64); // clave en bytes
 
@@ -144,17 +159,41 @@ public class Servidor
         {
             try
             {
+                String mensajeCifradoBase64 = "";
                 String mensaje;
                 while ((mensaje = entrada.readLine()) != null)
                 {
+                    SecretKey claveAESCliente = clavesAESClientes.get(cliente);
+
+                    // DESCIFRAR mensaje del cliente
+                    Cipher aesCliente = Cipher.getInstance("AES");
+                    aesCliente.init(Cipher.DECRYPT_MODE, claveAESCliente);
+                    byte[] mensajeBytes = Base64.getDecoder().decode(mensajeCifradoBase64);
+                    String mensajeDescifrado = new String(aesCliente.doFinal(mensajeBytes));
+
+
                     String mensajeCompleto = nombre + ": " + mensaje;
 
-                    String respuesta;
+
+                    // CIFRAR para enviar al moderador
+                    Cipher aesModerador = Cipher.getInstance("AES");
+                    aesModerador.init(Cipher.ENCRYPT_MODE, claveAESModerador);
+                    String mensajeCifradoParaModerador = Base64.getEncoder().encodeToString(aesModerador.doFinal(mensajeCompleto.getBytes()));
+
+
+
+
+                    String respuestaCifrada;
                     synchronized (lockModerador) // bloquea al moderador para que solo 1 cliente le envia informacion al mismo tiempo.
                     {
-                        salidaModerador.println(mensajeCompleto);
-                        respuesta = entradaModerador.readLine();  // espera la respuesta del moderador
+                        salidaModerador.println(mensajeCifradoParaModerador);
+                        respuestaCifrada = entradaModerador.readLine();  // espera la respuesta del moderador
                     }
+
+
+                    // DESCIFRAR respuesta del moderador
+                    aesModerador.init(Cipher.DECRYPT_MODE, claveAESModerador);
+                    String respuesta = new String(aesModerador.doFinal(Base64.getDecoder().decode(respuestaCifrada)));
 
                     if ("APROBADO".equalsIgnoreCase(respuesta))
                     {
@@ -170,6 +209,16 @@ public class Servidor
             catch (IOException e)
             {
                 e.printStackTrace();
+            } catch (NoSuchPaddingException e) {
+                throw new RuntimeException(e);
+            } catch (IllegalBlockSizeException e) {
+                throw new RuntimeException(e);
+            } catch (NoSuchAlgorithmException e) {
+                throw new RuntimeException(e);
+            } catch (BadPaddingException e) {
+                throw new RuntimeException(e);
+            } catch (InvalidKeyException e) {
+                throw new RuntimeException(e);
             }
         }).start();
     }
