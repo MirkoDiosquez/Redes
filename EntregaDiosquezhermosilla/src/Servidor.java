@@ -159,7 +159,6 @@ public class Servidor
         {
             try
             {
-                String mensajeCifradoBase64 = "";
                 String mensaje;
                 while ((mensaje = entrada.readLine()) != null)
                 {
@@ -168,11 +167,11 @@ public class Servidor
                     // DESCIFRAR mensaje del cliente
                     Cipher aesCliente = Cipher.getInstance("AES");
                     aesCliente.init(Cipher.DECRYPT_MODE, claveAESCliente);
-                    byte[] mensajeBytes = Base64.getDecoder().decode(mensajeCifradoBase64);
+                    byte[] mensajeBytes = Base64.getDecoder().decode(mensaje);
                     String mensajeDescifrado = new String(aesCliente.doFinal(mensajeBytes));
 
-
-                    String mensajeCompleto = nombre + ": " + mensaje;
+                    // mensaje ya descifrado por el servidor
+                    String mensajeCompleto = nombre + ": " + mensajeDescifrado;
 
 
                     // CIFRAR para enviar al moderador

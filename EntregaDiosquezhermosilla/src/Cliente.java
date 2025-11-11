@@ -116,7 +116,8 @@ public class Cliente
                     byte[] mensajeCifrado = aes.doFinal(mensajeUsuario.getBytes());
                     String mensajeCifradoBase64 = Base64.getEncoder().encodeToString(mensajeCifrado);
 
-                    salida.println(mensajeUsuario);
+                    // Enviar mensaje cifrado al servidor
+                    salida.println(mensajeCifradoBase64);
                     esperandoRespuesta[0] = true;
                 }
             }
