@@ -60,9 +60,25 @@ public class Servidor
     }
 
 
+    private void enviarClavePublicaAlModerador() {
+        salidaModerador.println(getClavePublica());
+    }
+
+    private void recibir_y_DescifrarClaveDelModerador() throws Exception {
+        String claveAESCifradaBase64 = entradaModerador.readLine();
+        byte[] claveAESCifrada = Base64.getDecoder().decode(claveAESCifradaBase64);
+
+        Cipher cifradorRSA = Cipher.getInstance("RSA");
+        cifradorRSA.init(Cipher.DECRYPT_MODE, clavePrivadaServidor);
+        byte[] claveAESBytes = cifradorRSA.doFinal(claveAESCifrada);
+
+        claveAESModerador = new SecretKeySpec(claveAESBytes, 0, claveAESBytes.length, "AES");
+        System.out.println("🔐 Clave AES del moderador establecida");
+    }
 
 
-    public void esperarModerador() throws IOException, NoSuchPaddingException, NoSuchAlgorithmException, IllegalBlockSizeException, BadPaddingException, InvalidKeyException {
+
+    public void esperarModerador() throws Exception {
         System.out.println("Esperando conexión del moderador...");
         moderadorSocket = serverSocketModerador.accept();
         System.out.println("Moderador conectado.");
@@ -70,27 +86,17 @@ public class Servidor
         salidaModerador = new PrintWriter(moderadorSocket.getOutputStream(), true);
         entradaModerador = new BufferedReader(new InputStreamReader(moderadorSocket.getInputStream()));
 
-        // Enviamos clave publica al mod
-        salidaModerador.println(getClavePublica());
+        enviarClavePublicaAlModerador();
 
-        // Recibimos la clave generada
-        String claveAESCifradaBase64 = entradaModerador.readLine();
-        byte[] claveAESCifrada = Base64.getDecoder().decode(claveAESCifradaBase64);
+        recibir_y_DescifrarClaveDelModerador();
 
-        // Desencriptamos
-        Cipher rsa = Cipher.getInstance("RSA");
-        rsa.init(Cipher.DECRYPT_MODE, clavePrivadaServidor);
-        byte[] claveAESBytes = rsa.doFinal(claveAESCifrada);
-
-
-        // reconstruir clave AES
-        claveAESModerador = new SecretKeySpec(claveAESBytes, 0, claveAESBytes.length, "AES");
     }
 
     public void esperarClientes()
     {
         new Thread(() ->
         {
+            System.out.println("Esperando clientes");
             while (true)
             {
                 try
@@ -148,6 +154,44 @@ public class Servidor
 
 
 
+    private void enviarClavePublicaAlCliente(PrintWriter salida) {
+        salida.println(getClavePublica());
+    }
+
+
+
+    private SecretKey recibirYDescifrarClaveAESDelCliente(BufferedReader entrada) throws Exception {
+        String claveAESCifradaBase64 = entrada.readLine();
+        byte[] claveAESCifrada = Base64.getDecoder().decode(claveAESCifradaBase64);
+
+        Cipher cifradorRSA = Cipher.getInstance("RSA");
+        cifradorRSA.init(Cipher.DECRYPT_MODE, clavePrivadaServidor);
+        byte[] claveAESBytes = cifradorRSA.doFinal(claveAESCifrada);
+
+        return new SecretKeySpec(claveAESBytes, 0, claveAESBytes.length, "AES");
+    }
+
+
+
+    private void procesarCliente(Socket cliente) throws Exception {
+        BufferedReader entrada = new BufferedReader(new InputStreamReader(cliente.getInputStream()));
+        PrintWriter salida = new PrintWriter(cliente.getOutputStream(), true);
+
+
+        enviarClavePublicaAlCliente(salida);
+
+        // Recibir y descifrar la clave AES del cliente
+        SecretKey claveAESCliente = recibirYDescifrarClaveAESDelCliente(entrada);
+        clavesAESClientes.put(cliente, claveAESCliente); // Aca guardamos el cliente y la clave que se genero entre ellos
+
+        // Recibir el nombre del cliente
+        String nombreCliente = entrada.readLine();
+        nombresClientes.put(cliente, nombreCliente);
+        System.out.println("Cliente conectado: " + cliente.getInetAddress() + " como " + nombreCliente);
+
+        // Iniciar hilo para manejar mensajes de este cliente
+        iniciarHiloParaManejarMensajesDelCliente(cliente, entrada, salida, nombreCliente);
+    }
 
 
 
